@@ -7,8 +7,8 @@ configfile: "config/config.yml"
 samples, = glob_wildcards("data/files/{sample}.csv")
 
 # Read the sample information CSV
-sample_info = pd.read_csv("data/sample_info.csv")
-sample_info = sample_info.set_index("sample")
+#sample_info = pd.read_csv("data/sample_info.csv")
+#sample_info = sample_info.set_index("sample")
 
 rule all:
     input:
@@ -21,12 +21,13 @@ rule neuts:
         theme = "config/"
     output:
         fitParams = "results/fitparams/{sample}.csv",
-        neutcurve_img = "results/images/{sample}.png"
+        neutcurve_img = "results/images/{sample}.png",
+        neutcurve_svg = "results/images/{sample}.svg"
     params:
         icvalues = config["icvalues"],
         height = config["height"],
         width = config["width"],
-        sample_type = lambda wildcards: sample_info.loc[wildcards.sample, "sample_type"]
+        #sample_type = lambda wildcards: sample_info.loc[wildcards.sample, "sample_type"]
     conda:
         "envs/environment.yml"
     log:

@@ -3,46 +3,16 @@ import neutcurve
 import altair as alt
 import sys
 import re
+import os
 _ = alt.data_transformers.disable_max_rows()
+
 #import altair theme and enable
 sys.path.append(str(snakemake.input.theme))
 import theme
 alt.themes.register('main_theme', theme.main_theme)
 alt.themes.enable('main_theme')
 
-# Path to the files for snakemake
-#neut_file_path = str(snakemake.input.neutFile)
-fitParams_output = str(snakemake.output.fitParams)
-output_image_path = str(snakemake.output.neutcurve_img)
-output_log_file = str(snakemake.log)
-
-log_file = open(output_log_file, 'w')
-log_file.write(f"Input file: {snakemake.input.neutFile}\n")
-
-# Snakemake parameter flags
-icvalues = snakemake.params.icvalues
-height = snakemake.params.height
-width = snakemake.params.width
-sample_type = snakemake.params.sample_type
-
-# Set flags based on sample type
-if sample_type == 'receptor':
-    receptor_flag = True
-    sera_flag = False
-    antibody_flag = False
-elif sample_type == 'sera':
-    receptor_flag = False
-    sera_flag = True
-    antibody_flag = False
-elif sample_type == 'antibody':
-    receptor_flag = False
-    sera_flag = False
-    antibody_flag = True
-else:
-    raise ValueError(f"Unknown sample type: {sample_type}")
-
 # Read in the neutralization data
-
 def load_data(file_path):
     try:
         df = pd.read_csv(file_path)
@@ -56,34 +26,28 @@ def load_data(file_path):
     except Exception as e:
         raise ValueError(f"Error loading data from {file_path}: {e}")
 
-df = load_data(snakemake.input.neutFile)
+def process_filename(file_path):
+    input_file = str(file_path)
+    filename = os.path.basename(input_file)
+    filename_lower = filename.lower()
 
-
+    if 'receptor' in filename_lower:
+        return 'receptor'
+    elif 'sera' in filename_lower:
+        return 'sera'
+    elif 'antibody' in filename_lower:
+        return 'antibody'
+    else:
+        raise ValueError(f"Unknown sample type in filename: {filename}")
+    
+# Determine if serum variables or virus variables should be used in the plot
 def determine_experiment_type(dataframe):
     number_serum = len(dataframe["serum"].unique())
     number_virus = len(dataframe["virus"].unique())
-    if number_serum > number_virus:
-        return "serum"
-    else:
-        return "virus"
+    return number_serum > number_virus, number_serum <= number_virus
     
-experiment_type = determine_experiment_type(df)
-print(experiment_type)
-
-
-
-# Determine if the serum or virus is being varied in the experiment
-number_serum = len(df["serum"].unique())
-number_virus = len(df["virus"].unique())
-if number_serum > number_virus:
-    vary_serum_flag = True
-    vary_virus_flag = False
-else:
-    vary_serum_flag = False
-    vary_virus_flag = True
-
 # Estimate neutralization curves using the `curvefits` module from `neutcurve` package.
-def get_neutcurve(df, replicate="average"):
+def get_neutcurve(df, icvalues, replicate="average"):
     #estimate fits
     fits = neutcurve.curvefits.CurveFits(
         data=df,
@@ -119,53 +83,19 @@ def get_neutcurve(df, replicate="average"):
     
     return combined_curve, fitParams
 
-
-neutcurve_df,fitParams = get_neutcurve(df)
-
-################### Export modified fitParams to csv ###################
-#fitParams = fitParams.drop(['replicate','nreplicates'],axis=1)
-
-# Function to rename columns
-def rename_ic_columns(col_name):
-    match = re.match(r'(ic\d{2}$)', col_name)
-    if match:
-        return f"{match.group(1)}_ug"
-    return col_name
-
-# Rename columns
-fitParams.rename(columns=rename_ic_columns, inplace=True)
-
-# Function to create new 'ng' columns
-def create_ng_columns(df):
-    for col in df.columns:
-        match = re.match(r'(ic\d{2})_ug', col)
-        if match:
-            new_col_name = f"{match.group(1)}_ng"
-            df[new_col_name] = df[col].mul(1000).round(1)
-    return df
-
-fitParams = create_ng_columns(fitParams)
-
-def filter_columns(df):
-    return df.loc[:, df.columns.str.contains('serum|virus|_ng', case=False)]
-
-# Apply the column filter
-df = filter_columns(fitParams)
-df.to_csv(fitParams_output,index=False)
-
 # Plot the neutralization curves
-def plot_neut_curve(df):
-    if receptor_flag:
+def plot_neut_curve(df, vary_serum_flag, vary_virus_flag, sample_type):
+    if sample_type == 'receptor':
         scale = alt.Scale(type='log')
         axis = alt.Axis(format='.0e',tickCount=3)
         title = 'Concentration (µM)'
         legend_title = 'Receptor'
-    elif sera_flag:
+    elif sample_type == 'sera':
         scale = alt.Scale(type='log')
         axis = alt.Axis(format='.0e',tickCount=3)
         title = 'Sera Dilution'
         legend_title = 'Serum'
-    elif antibody_flag:
+    elif sample_type == 'antibody':
         scale = alt.Scale(type='log')
         axis = alt.Axis(format='.0e',tickCount=3)
         title = 'Concentration (µg/mL)'
@@ -221,12 +151,35 @@ def plot_neut_curve(df):
         )
     )
     plot = chart + circle + error
-    plot = plot.properties(width=width,height=height)
+    plot = plot.properties(width=snakemake.params.width,height=snakemake.params.height)
     return plot
 
+# Main execution
+if __name__ == "__main__":
+    try:
+        log_file = open(str(snakemake.log), 'w')
+        log_file.write(f"Input file: {snakemake.input.neutFile}\n")
 
-ephrin_curve = plot_neut_curve(neutcurve_df)
+        # Load data
+        df = load_data(snakemake.input.neutFile)
+        
+        # Determine sample type
+        sample_type = process_filename(snakemake.input.neutFile)
+        
+        # Determine experiment type
+        vary_serum_flag, vary_virus_flag = determine_experiment_type(df)
 
-#save plots
-ephrin_curve.save(output_image_path, ppi=300)
-log_file.close()
+        # Get neutralization curves and IC values
+        neutcurve_df, fit_params = get_neutcurve(df, snakemake.params.icvalues)
+        
+        # Save the fit parameters
+        fit_params.to_csv(snakemake.output.fitParams, index=False)
+        
+        # Plot the neutralization curves
+        neut_curve = plot_neut_curve(neutcurve_df, vary_serum_flag, vary_virus_flag, sample_type)
+        neut_curve.save(snakemake.output.neutcurve_img, ppi=300)
+        neut_curve.save(snakemake.output.neutcurve_svg)
+        
+    except Exception as e:
+        log_file.write(f"An error occurred: {str(e)}")
+    log_file.close()

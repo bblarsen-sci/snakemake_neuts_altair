@@ -1,1 +1,2 @@
 Input file: data/files/240709_indiv_mutants.csv
+An error occurred: Unknown sample type in filename: 240709_indiv_mutants.csv
