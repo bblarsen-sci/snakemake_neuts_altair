@@ -122,13 +122,15 @@ def plot_neut_curve(df, vary_serum_flag, vary_virus_flag, sample_type):
             y=alt.Y(
                 "fit:Q",
                 title="Fraction Infectivity",
+                scale=alt.Scale(domain=[0, 1]),
+                axis=alt.Axis(values=[0,0.5,1]),
             ),
             color=alt.Color(color_variable, title=legend_title),
         )
     )
     circle = (
         alt.Chart(df)
-        .mark_circle(size=40,opacity=1)
+        .mark_circle(size=30,opacity=1)
         .encode(
             x=alt.X(
                 "concentration",
