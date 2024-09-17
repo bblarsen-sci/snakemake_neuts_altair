@@ -1,0 +1,25 @@
+configfile: "config/config.yml"
+
+samples = config["samples"]
+
+
+rule all:
+    input:
+        expand("results/fitparams/{samples}.csv", samples=samples),
+        expand("results/images/{samples}.png", samples=samples)
+
+rule neuts:
+    input:
+        neutFile = "data/{samples}.csv",
+        theme = "config/"
+    output:
+        fitParams = "results/fitparams/{samples}.csv",
+        neutcurve_img = multiext("results/images/{samples}",".png")
+    params:
+        icvalues = config["icvalues"],
+        height = config["height"],
+        width = config["width"]
+    log:
+        "results/logs/{samples}_neuts.txt"
+    script:
+        "scripts/neuts.py"

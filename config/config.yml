@@ -1,0 +1,11 @@
+
+
+#IC values you want:
+icvalues: [50,90,99]
+height: 200
+width: 300
+
+samples:
+   - niv_rbp_antibody_neuts
+   - niv_rbp_receptor_neuts_CHO-bEFNB2
+   - niv_rbp_receptor_neuts_CHO-bEFNB3

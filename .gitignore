@@ -1,0 +1,7 @@
+.snakemake/
+*.DS_Store
+*.ipynb_checkpoints
+*/log/
+iqtree2
+!.gitignore
+!.gitmodules
