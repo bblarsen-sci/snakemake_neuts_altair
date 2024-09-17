@@ -2,6 +2,7 @@ import pandas as pd
 import neutcurve
 import altair as alt
 import sys
+import re
 # allow more rows for Altair
 _ = alt.data_transformers.disable_max_rows()
 
@@ -20,14 +21,41 @@ output_image_path = str(snakemake.output.neutcurve_img)
 icvalues = snakemake.params.icvalues
 height = snakemake.params.height
 width = snakemake.params.width
+sample_type = snakemake.params.sample_type
 
-# Flags to determine the type of curve to plot
-receptor_flag = True
-sera_flag = False
-antibody_flag = False
+# Set flags based on sample type
+if sample_type == 'receptor':
+    receptor_flag = True
+    sera_flag = False
+    antibody_flag = False
+elif sample_type == 'sera':
+    receptor_flag = False
+    sera_flag = True
+    antibody_flag = False
+elif sample_type == 'antibody':
+    receptor_flag = False
+    sera_flag = False
+    antibody_flag = True
+else:
+    raise ValueError(f"Unknown sample type: {sample_type}")
 
+# Read in the neutralization data
 df = pd.read_csv(neut_file_path)
 
+# Check if the necessary columns are present in the dataframe
+if 'serum' not in df.columns:
+    print('serum is not a column')
+elif 'virus' not in df.columns:
+    print('virus is not a column')
+elif 'replicate' not in df.columns:
+    print('replicate is not a column')
+elif 'concentration' not in df.columns:
+    print('concentration is not a column')
+elif 'fraction infectivity' not in df.columns:
+    print('fraction infectivity is not a column')
+
+
+# Determine if the serum or virus is being varied in the experiment
 number_serum = len(df["serum"].unique())
 number_virus = len(df["virus"].unique())
 if number_serum > number_virus:
@@ -76,8 +104,39 @@ def get_neutcurve(df, replicate="average"):
 
 
 neutcurve_df,fitParams = get_neutcurve(df)
-fitParams.to_csv(fitParams_output,index=False)
 
+################### Export modified fitParams to csv ###################
+#fitParams = fitParams.drop(['replicate','nreplicates'],axis=1)
+
+# Function to rename columns
+def rename_ic_columns(col_name):
+    match = re.match(r'(ic\d{2}$)', col_name)
+    if match:
+        return f"{match.group(1)}_ug"
+    return col_name
+
+# Rename columns
+fitParams.rename(columns=rename_ic_columns, inplace=True)
+
+# Function to create new 'ng' columns
+def create_ng_columns(df):
+    for col in df.columns:
+        match = re.match(r'(ic\d{2})_ug', col)
+        if match:
+            new_col_name = f"{match.group(1)}_ng"
+            df[new_col_name] = df[col].mul(1000).round(1)
+    return df
+
+fitParams = create_ng_columns(fitParams)
+
+def filter_columns(df):
+    return df.loc[:, df.columns.str.contains('serum|virus|_ng', case=False)]
+
+# Apply the column filter
+df = filter_columns(fitParams)
+df.to_csv(fitParams_output,index=False)
+
+# Plot the neutralization curves
 def plot_neut_curve(df):
     if receptor_flag:
         scale = alt.Scale(type='log')
@@ -95,7 +154,7 @@ def plot_neut_curve(df):
         title = 'Concentration (µg/mL)'
         legend_title = 'Antibody'
     else:
-        print('Please specify the type of curve to plot')
+        raise ValueError(f"Unknown sample type")
     
     if vary_serum_flag:
         color_variable = 'serum'
@@ -152,4 +211,4 @@ def plot_neut_curve(df):
 ephrin_curve = plot_neut_curve(neutcurve_df)
 
 #save plots
-ephrin_curve.save(output_image_path,ppi=300)
+ephrin_curve.save(output_image_path, ppi=300)

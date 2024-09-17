@@ -1,11 +1,9 @@
 
 
-#IC values you want:
+#IC values you want saved to a file:
 icvalues: [50,90,99]
+
+# Neutralization curve plot dimensions
 height: 200
 width: 300
 
-samples:
-   - niv_rbp_antibody_neuts
-   - niv_rbp_receptor_neuts_CHO-bEFNB2
-   - niv_rbp_receptor_neuts_CHO-bEFNB3

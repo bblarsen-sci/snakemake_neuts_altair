@@ -1,25 +1,35 @@
+import pandas as pd
+
+# Load the configuration file
 configfile: "config/config.yml"
 
-samples = config["samples"]
+# Get the list of samples from the data directory
+samples, = glob_wildcards("data/files/{sample}.csv")
 
+# Read the sample information CSV
+sample_info = pd.read_csv("data/sample_info.csv")
+sample_info = sample_info.set_index("sample")
 
 rule all:
     input:
-        expand("results/fitparams/{samples}.csv", samples=samples),
-        expand("results/images/{samples}.png", samples=samples)
+        expand("results/fitparams/{sample}.csv", sample=samples),
+        expand("results/images/{sample}.png", sample=samples),
 
 rule neuts:
     input:
-        neutFile = "data/{samples}.csv",
+        neutFile = "data/files/{sample}.csv",
         theme = "config/"
     output:
-        fitParams = "results/fitparams/{samples}.csv",
-        neutcurve_img = multiext("results/images/{samples}",".png")
+        fitParams = "results/fitparams/{sample}.csv",
+        neutcurve_img = "results/images/{sample}.png"
     params:
         icvalues = config["icvalues"],
         height = config["height"],
-        width = config["width"]
+        width = config["width"],
+        sample_type = lambda wildcards: sample_info.loc[wildcards.sample, "sample_type"]
+    conda:
+        "envs/environment.yml"
     log:
-        "results/logs/{samples}_neuts.txt"
+        "results/logs/{sample}_neuts.txt"
     script:
         "scripts/neuts.py"
