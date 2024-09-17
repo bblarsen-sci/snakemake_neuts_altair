@@ -6,13 +6,14 @@ channels:
   - defaults
 
 dependencies:
-  - altair=5.1.2
   - pandas=2.0
   - pip
+  - jupyterlab
   - python=3.11
   - snakefmt
   - snakemake=7.32
   - pip:
+    - altair
     - neutcurve==0.5.7
     - vl-convert-python
 

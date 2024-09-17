@@ -3,9 +3,7 @@ import neutcurve
 import altair as alt
 import sys
 import re
-# allow more rows for Altair
 _ = alt.data_transformers.disable_max_rows()
-
 #import altair theme and enable
 sys.path.append(str(snakemake.input.theme))
 import theme
@@ -13,9 +11,13 @@ alt.themes.register('main_theme', theme.main_theme)
 alt.themes.enable('main_theme')
 
 # Path to the files for snakemake
-neut_file_path = str(snakemake.input.neutFile)
+#neut_file_path = str(snakemake.input.neutFile)
 fitParams_output = str(snakemake.output.fitParams)
 output_image_path = str(snakemake.output.neutcurve_img)
+output_log_file = str(snakemake.log)
+
+log_file = open(output_log_file, 'w')
+log_file.write(f"Input file: {snakemake.input.neutFile}\n")
 
 # Snakemake parameter flags
 icvalues = snakemake.params.icvalues
@@ -40,19 +42,34 @@ else:
     raise ValueError(f"Unknown sample type: {sample_type}")
 
 # Read in the neutralization data
-df = pd.read_csv(neut_file_path)
 
-# Check if the necessary columns are present in the dataframe
-if 'serum' not in df.columns:
-    print('serum is not a column')
-elif 'virus' not in df.columns:
-    print('virus is not a column')
-elif 'replicate' not in df.columns:
-    print('replicate is not a column')
-elif 'concentration' not in df.columns:
-    print('concentration is not a column')
-elif 'fraction infectivity' not in df.columns:
-    print('fraction infectivity is not a column')
+def load_data(file_path):
+    try:
+        df = pd.read_csv(file_path)
+    
+        REQUIRED_COLUMNS = ['serum', 'virus', 'replicate', 'concentration', 'fraction infectivity']
+        missing_columns = [col for col in REQUIRED_COLUMNS if col not in df.columns]
+        if missing_columns:
+            log_file.write(f"Missing required columns: {', '.join(missing_columns)}\n")
+            raise ValueError(f"Missing required columns: {', '.join(missing_columns)}")
+        return df
+    except Exception as e:
+        raise ValueError(f"Error loading data from {file_path}: {e}")
+
+df = load_data(snakemake.input.neutFile)
+
+
+def determine_experiment_type(dataframe):
+    number_serum = len(dataframe["serum"].unique())
+    number_virus = len(dataframe["virus"].unique())
+    if number_serum > number_virus:
+        return "serum"
+    else:
+        return "virus"
+    
+experiment_type = determine_experiment_type(df)
+print(experiment_type)
+
 
 
 # Determine if the serum or virus is being varied in the experiment
@@ -212,3 +229,4 @@ ephrin_curve = plot_neut_curve(neutcurve_df)
 
 #save plots
 ephrin_curve.save(output_image_path, ppi=300)
+log_file.close()

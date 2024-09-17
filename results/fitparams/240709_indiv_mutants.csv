@@ -1,0 +1,8 @@
+serum,virus,ic50_ng,ic90_ng,ic99_ng
+NiV-sG,K199W,0.0,0.2,0.8
+NiV-sG,K386D,0.0,0.2,1.2
+NiV-sG,Q530W,0.0,0.1,0.4
+NiV-sG,D582Q,0.0,0.1,0.2
+NiV-sG,WT,0.0,0.1,0.3
+NiV-sG,Y171G,0.2,0.4,1.1
+NiV-sG,K199W/K386D/D582Q,0.1,0.5,5.1

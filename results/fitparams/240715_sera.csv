@@ -1,0 +1,5 @@
+serum,virus,ic50_ng,ic90_ng,ic99_ng
+mRNA,NiV,0.0,0.0,0.1
+NiV-sG,NiV,0.0,0.1,0.2
+ChAdOx1,NiV,0.1,0.2,0.7
+HeV-sG,NiV,0.0,0.1,0.3
