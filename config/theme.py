@@ -1,12 +1,31 @@
 import altair as alt
 
+
 def main_theme():
     # Define Typography
     font = "Helvetica"
 
     # Define Colors
-    main_palette = ["#4e79a7","#f28e2c","#e15759","#76b7b2","#59a14f","#edc949","#af7aa1","#ff9da7","#9c755f","#bab0ab"]
-    sequential_palette = ["#c7e9b4", "#7fcdbb", "#41b6c4", "#1d91c0", "#225ea8", "#253494"]
+    main_palette = [
+        "#4e79a7",
+        "#f28e2c",
+        "#e15759",
+        "#76b7b2",
+        "#59a14f",
+        "#edc949",
+        "#af7aa1",
+        "#ff9da7",
+        "#9c755f",
+        "#bab0ab",
+    ]
+    sequential_palette = [
+        "#c7e9b4",
+        "#7fcdbb",
+        "#41b6c4",
+        "#1d91c0",
+        "#225ea8",
+        "#253494",
+    ]
 
     # Axes
     axisColor = "black"
@@ -17,44 +36,43 @@ def main_theme():
             "background": "white",
             "title": {
                 "fontSize": 20,
-                "fontWeight": 'normal',
+                "fontWeight": "normal",
                 "font": font,
                 "anchor": "start",
                 "color": "#000000",
-                "orient": 'top',
+                "orient": "top",
                 "offset": 5,
-                "subtitleColor": 'gray',
+                "subtitleColor": "gray",
                 "subtitleFont": font,
-                "subtitleFontWeight": 'normal',
+                "subtitleFontWeight": "normal",
                 "subtitleFontSize": 18,
                 "subtitlePadding": 2,
             },
             "axis": {
-                #domain
+                # domain
                 "domain": True,
                 "domainColor": axisColor,
                 "domainWidth": 1,
-                #grid
+                # grid
                 "grid": False,
                 "gridColor": gridColor,
                 "gridWidth": 0.5,
-                #label
+                # label
                 "labelFont": font,
                 "labelFontSize": 14,
                 "labelFlush": False,
-                "labelFontWeight": 'normal',
+                "labelFontWeight": "normal",
                 "labelPadding": 2,
-                #"labelAngle": 0,
-                
-                #ticks
+                # "labelAngle": 0,
+                # ticks
                 "tickColor": axisColor,
                 "tickSize": 4,
-                #"tickCount": 3,
+                # "tickCount": 3,
                 "tickWidth": 1,
-                #title
+                # title
                 "titleFont": font,
-                "titleAlign": 'center',
-                "titleFontWeight": 'bold',
+                "titleAlign": "center",
+                "titleFontWeight": "bold",
                 "titleFontSize": 14,
                 "titlePadding": 5,
             },
@@ -64,7 +82,7 @@ def main_theme():
                 "symbolSize": 100,
                 "titleFont": font,
                 "titleFontSize": 14,
-                "titleFontWeight": 'bold',
+                "titleFontWeight": "bold",
                 "padding": 5,
                 "titleLimit": 200,
                 "gradientLength": 100,
@@ -74,18 +92,19 @@ def main_theme():
                 "diverging": sequential_palette,
             },
             "view": {
-                "stroke": "transparent", # Remove the border around the visualization
-            	"strokeWidth": 0,
+                "stroke": "transparent",  # Remove the border around the visualization
+                "strokeWidth": 0,
             },
-        	"text": {
-            	"font": 'Helvetica Light',
-            	"fontSize": 14,
-        	}
+            "text": {
+                "font": "Helvetica Light",
+                "fontSize": 14,
+            },
         }
     }
 
+
 # Register the custom theme under a chosen name
-#alt.themes.register('brendan_theme', brendan_theme)
+# alt.themes.register('brendan_theme', brendan_theme)
 
 # Enable the newly registered theme
-#alt.themes.enable('brendan_theme')
+# alt.themes.enable('brendan_theme')

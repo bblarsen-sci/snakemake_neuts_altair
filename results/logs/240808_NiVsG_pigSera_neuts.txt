@@ -1,1 +1,3 @@
 Input file: data/files/240808_NiVsG_pigSera.csv
+Number of serum variables: 4
+Number of virus variables: 1

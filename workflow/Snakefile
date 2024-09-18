@@ -1,36 +1,16 @@
-import pandas as pd
-
 # Load the configuration file
 configfile: "config/config.yml"
 
-# Get the list of samples from the data directory
-samples, = glob_wildcards("data/files/{sample}.csv")
 
-# Read the sample information CSV
-#sample_info = pd.read_csv("data/sample_info.csv")
-#sample_info = sample_info.set_index("sample")
+# Get the list of samples from the data directory
+(samples,) = glob_wildcards("data/files/{sample}.csv")
+
+
+include: "rules/calculate_neuts.smk"
+
 
 rule all:
     input:
         expand("results/fitparams/{sample}.csv", sample=samples),
         expand("results/images/{sample}.png", sample=samples),
-
-rule neuts:
-    input:
-        neutFile = "data/files/{sample}.csv",
-        theme = "config/"
-    output:
-        fitParams = "results/fitparams/{sample}.csv",
-        neutcurve_img = "results/images/{sample}.png",
-        neutcurve_svg = "results/images/{sample}.svg"
-    params:
-        icvalues = config["icvalues"],
-        height = config["height"],
-        width = config["width"],
-        #sample_type = lambda wildcards: sample_info.loc[wildcards.sample, "sample_type"]
-    conda:
-        "envs/environment.yml"
-    log:
-        "results/logs/{sample}_neuts.txt"
-    script:
-        "scripts/neuts.py"
+        expand("results/images/{sample}.svg", sample=samples),

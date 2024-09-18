@@ -1,1 +1,3 @@
 Input file: data/files/niv_rbp_antibody_neuts.csv
+Number of serum variables: 8
+Number of virus variables: 1

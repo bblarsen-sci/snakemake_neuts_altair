@@ -1,1 +1,3 @@
 Input file: data/files/niv_rbp_receptor_neuts_CHO-bEFNB3.csv
+Number of serum variables: 1
+Number of virus variables: 4
