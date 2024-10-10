@@ -72,7 +72,7 @@ def get_neutcurve(df, icvalues, replicate="average"):
         replicate_col="replicate",
         conc_col="concentration",
         fracinf_col="fraction infectivity",
-        fixbottom=0,
+        #fixbottom=0,
     )
 
     fitParams = fits.fitParams(ics=icvalues)
