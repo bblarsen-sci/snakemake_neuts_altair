@@ -3,8 +3,8 @@ configfile: "config/config.yml"
 
 
 # Get the list of samples from the data directory
-(samples,) = glob_wildcards("data/files/{sample}.csv")
-
+(samples,) = glob_wildcards("data/{sample}.csv")
+print(samples)
 
 include: "rules/calculate_neuts.smk"
 

@@ -1,6 +1,6 @@
 rule neuts:
     input:
-        neutFile="data/files/{sample}.csv",
+        neutFile="data/{sample}.csv",
         theme="config/",  #altair theme
     output:
         fitParams="results/fitparams/{sample}.csv",

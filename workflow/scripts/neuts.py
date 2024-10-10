@@ -103,9 +103,7 @@ def get_neutcurve(df, icvalues, replicate="average"):
 def custom_sort_order(array):
     # Helper function to extract numerical part from mutation strings.
     def extract_number(virus):
-        num = re.search(
-            r"\d+", virus
-        )  # Find the first sequence of digits in the string.
+        num = re.search(r"\d+", virus)
         return (
             int(num.group()) if num else 0
         )  # Convert digits to integer, or 0 if none found.
@@ -119,6 +117,13 @@ def custom_sort_order(array):
         array.remove("WT")  # Remove 'WT' from its current position.
         array.insert(0, "WT")  # Insert 'WT' at the beginning of the list.
     return array
+
+def custom_sort_key(item):
+    # Extract the time value from the item string
+    match = re.search(r'(\d+)min', item)
+    if match:
+        return int(match.group(1))
+    return 0  # Return 0 for items without a time value
 
 
 category10_colors = [
@@ -159,10 +164,22 @@ def plot_neut_curve(df, vary_serum_flag, vary_virus_flag, sample_type):
     # Determine the color variable depending on the variable
     if vary_serum_flag:
         color_variable = "serum"
-        color_scale = alt.Color(color_variable, title=legend_title)
+        legend_title = "Serum"
     elif vary_virus_flag:
         color_variable = "virus"
-        color_scale = alt.Color(color_variable, title=legend_title)
+        legend_title= "Virus"
+
+    # Get the unique values of the color variable
+    unique_values = df[color_variable].unique()
+    
+    # Sort the unique values using the custom sorting function
+    sorted_values = sorted(unique_values, key=custom_sort_key)
+    color_scale = alt.Color(
+        color_variable,
+        title=legend_title,
+        scale=alt.Scale(domain=sorted_values),
+        sort=sorted_values
+    )
 
     # If 'WT' is present, set the color scale to include 'WT' as the first color and make it black
     if "WT" in df["virus"].unique():
