@@ -3,17 +3,15 @@ name: altair_neut_curves
 channels:
   - conda-forge
   - bioconda
-  - defaults
 
 dependencies:
+  - altair=5.4.1
   - pandas=2.0
   - pip
   - jupyterlab
   - python=3.11
   - snakefmt
   - snakemake=7.32
+  - vl-convert-python
   - pip:
-    - altair
     - neutcurve==0.5.7
-    - vl-convert-python
-

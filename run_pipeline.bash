@@ -1,3 +1,3 @@
 #!/bin/bash
 
-snakemake --cores 1 --use-conda --snakefile workflow/Snakefile
+snakemake --cores 1 --sdm conda  --snakefile workflow/Snakefile

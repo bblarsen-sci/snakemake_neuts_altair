@@ -1,0 +1,3 @@
+Input file: data/241014_NiVsG_42_sera.csv
+Number of serum variables: 1
+Number of virus variables: 6
