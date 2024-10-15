@@ -6,7 +6,7 @@ This snakemake pipeline uses [neut_curve](https://jbloomlab.github.io/neutcurve/
 ## Installation and Usage
 clone the repository
 ```bash
-git clone https://github.com/bblarsen-sci/luciferase_neut_snakemake.git
+git clone https://github.com/bblarsen-sci/snakemake_neuts_altair.git
 ```
 
 Then run the pipeline with snakemake
