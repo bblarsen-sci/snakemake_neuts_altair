@@ -1,19 +1,36 @@
 import pandas as pd
 import neutcurve
 import altair as alt
-import sys
 import re
 import os
+import requests
+import importlib
 
-_ = alt.data_transformers.disable_max_rows()
+# Import the custom theme from the URL
+def import_module_from_url(url, module_name):
+    response = requests.get(url)
+    if response.status_code != 200:
+        raise ValueError(
+            f"Failed to fetch the file. Status code: {response.status_code}"
+        )
 
-# import altair theme and enable
-sys.path.append(str(snakemake.input.theme))
-import theme
+    # Create a new module
+    spec = importlib.util.spec_from_loader(module_name, loader=None)
+    module = importlib.util.module_from_spec(spec)
 
-alt.themes.register("main_theme", theme.main_theme)
+    # Execute the module in its own namespace
+    exec(response.text, module.__dict__)
+
+    return module
+
+
+url = "https://raw.githubusercontent.com/dms-vep/Nipah_Malaysia_RBP_DMS/refs/heads/master/data/custom_analyses_data/theme.py"
+theme_module = import_module_from_url(url, "theme")
+theme_config = theme_module.main_theme()
+alt.themes.register("main_theme", theme_module.main_theme)
 alt.themes.enable("main_theme")
 
+_ = alt.data_transformers.disable_max_rows()
 
 # Read in the neutralization data
 def load_data(file_path):
@@ -42,15 +59,25 @@ def process_filename(file_path):
     filename = os.path.basename(input_file)
     filename_lower = filename.lower()
 
+    result = {
+        'type': None,
+        'facet': False
+    }
+
     if "receptor" in filename_lower:
-        return "receptor"
+        result['type'] = "receptor"
     elif "sera" in filename_lower:
-        return "sera"
+        result['type'] = "sera"
     elif "antibody" in filename_lower:
-        return "antibody"
+        result['type'] = "antibody"
     else:
         log_file.write(f"Unknown sample type in filename: {filename}\n")
         raise ValueError(f"Unknown sample type in filename: {filename}")
+
+    if "facet" in filename_lower:
+        result['facet'] = True
+
+    return result
 
 
 # Determine if serum variables or virus variables should be used in the plot
@@ -99,7 +126,6 @@ def get_neutcurve(df, icvalues, replicate="average"):
 
     return combined_curve, fitParams
 
-
 def custom_sort_order(array):
     # Helper function to extract numerical part from mutation strings.
     def extract_number(virus):
@@ -125,23 +151,10 @@ def custom_sort_key(item):
         return int(match.group(1))
     return 0  # Return 0 for items without a time value
 
-
-category10_colors = [
-    "#4E79A5",
-    "#F18F3B",
-    "#E0585B",
-    "#77B7B2",
-    "#5AA155",
-    "#EDC958",
-    "#AF7AA0",
-    "#FE9EA8",
-    "#9C7561",
-    "#BAB0AC",
-]
-
+colors_for_plot = snakemake.params.colors
 
 # Plot the neutralization curves
-def plot_neut_curve(df, vary_serum_flag, vary_virus_flag, sample_type):
+def plot_neut_curve(df, vary_serum_flag, vary_virus_flag, sample_type, use_facet):
     if sample_type == "receptor":
         scale = alt.Scale(type="log")
         axis = alt.Axis(format=".0e", tickCount=3)
@@ -174,17 +187,11 @@ def plot_neut_curve(df, vary_serum_flag, vary_virus_flag, sample_type):
     
     # Sort the unique values using the custom sorting function
     sorted_values = sorted(unique_values, key=custom_sort_key)
-    color_scale = alt.Color(
-        color_variable,
-        title=legend_title,
-        scale=alt.Scale(domain=sorted_values),
-        sort=sorted_values
-    )
-
+    
     # If 'WT' is present, set the color scale to include 'WT' as the first color and make it black
     if "WT" in df["virus"].unique():
         print("WT is present")
-        colors = ["black"] + category10_colors[: len(df["virus"].unique()) - 1]
+        colors = ["black"] + colors_for_plot[: len(df["virus"].unique()) - 1]
         color_scale = alt.Color(
             color_variable,
             title=legend_title,
@@ -192,7 +199,14 @@ def plot_neut_curve(df, vary_serum_flag, vary_virus_flag, sample_type):
                 domain=custom_sort_order(df["virus"].unique()), range=colors
             ),
         )
-
+    else:
+        color_scale = alt.Color(
+            color_variable,
+            title=legend_title,
+            scale=alt.Scale(domain=sorted_values,range=colors_for_plot),
+            sort=sorted_values
+        )
+        
     chart = (
         alt.Chart(df)
         .mark_line(size=1.5)
@@ -238,7 +252,20 @@ def plot_neut_curve(df, vary_serum_flag, vary_virus_flag, sample_type):
     )
     plot = chart + circle + error
     plot = plot.properties(width=snakemake.params.width, height=snakemake.params.height)
+    
+    if use_facet:
+        facet_variable = 'serum' if vary_virus_flag else 'virus'
+        plot = plot.facet(
+            facet=alt.Facet(
+                f'{facet_variable}:N',
+                header=alt.Header(title=None),
+            ),
+            columns=2  
+        )
+
     return plot
+
+
 
 
 # Main execution
@@ -250,8 +277,10 @@ if __name__ == "__main__":
         # Load data
         df = load_data(snakemake.input.neutFile)
 
-        # Determine sample type
-        sample_type = process_filename(snakemake.input.neutFile)
+        # Determine sample type and faceting
+        filename_info = process_filename(snakemake.input.neutFile)
+        sample_type = filename_info['type']
+        use_facet = filename_info['facet']
 
         # Determine experiment type
         vary_serum_flag, vary_virus_flag = determine_experiment_type(df)
@@ -264,7 +293,7 @@ if __name__ == "__main__":
 
         # Plot the neutralization curves
         neut_curve = plot_neut_curve(
-            neutcurve_df, vary_serum_flag, vary_virus_flag, sample_type
+            neutcurve_df, vary_serum_flag, vary_virus_flag, sample_type, use_facet
         )
         neut_curve.save(snakemake.output.neutcurve_img, ppi=300)
         neut_curve.save(snakemake.output.neutcurve_svg)

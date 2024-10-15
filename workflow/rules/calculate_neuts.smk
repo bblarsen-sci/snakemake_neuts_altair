@@ -10,6 +10,7 @@ rule neuts:
         icvalues=config["icvalues"],
         height=config["height"],
         width=config["width"],
+        colors=config["colors"],
     conda:
         "../envs/environment.yml"
     log:

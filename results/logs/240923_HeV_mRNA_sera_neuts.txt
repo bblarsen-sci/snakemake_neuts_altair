@@ -1,3 +1,0 @@
-Input file: data/240923_HeV_mRNA_sera.csv
-Number of serum variables: 3
-Number of virus variables: 1

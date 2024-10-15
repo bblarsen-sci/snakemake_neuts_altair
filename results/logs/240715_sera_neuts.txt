@@ -1,3 +1,0 @@
-Input file: data/240715_sera.csv
-Number of serum variables: 4
-Number of virus variables: 1

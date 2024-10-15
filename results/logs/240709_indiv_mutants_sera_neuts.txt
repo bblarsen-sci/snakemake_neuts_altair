@@ -1,3 +1,0 @@
-Input file: data/240709_indiv_mutants_sera.csv
-Number of serum variables: 1
-Number of virus variables: 7

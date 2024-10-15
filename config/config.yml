@@ -7,3 +7,5 @@ icvalues: [50,90,99]
 height: 200
 width: 300
 
+# which colors to use
+colors: ["#4E79A5","#F18F3B","#E0585B","#77B7B2","#5AA155","#EDC958","#AF7AA0","#FE9EA8","#9C7561","#BAB0AC"]

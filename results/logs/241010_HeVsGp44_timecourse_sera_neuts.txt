@@ -1,3 +1,0 @@
-Input file: data/241010_HeVsGp44_timecourse_sera.csv
-Number of serum variables: 3
-Number of virus variables: 1
