@@ -3,55 +3,34 @@ import neutcurve
 import altair as alt
 import re
 import os
-import requests
-import importlib
-
-# Import the custom theme from the URL
-def import_module_from_url(url, module_name):
-    response = requests.get(url)
-    if response.status_code != 200:
-        raise ValueError(
-            f"Failed to fetch the file. Status code: {response.status_code}"
-        )
-
-    # Create a new module
-    spec = importlib.util.spec_from_loader(module_name, loader=None)
-    module = importlib.util.module_from_spec(spec)
-
-    # Execute the module in its own namespace
-    exec(response.text, module.__dict__)
-
-    return module
-
-
-url = "https://raw.githubusercontent.com/dms-vep/Nipah_Malaysia_RBP_DMS/refs/heads/master/data/custom_analyses_data/theme.py"
-theme_module = import_module_from_url(url, "theme")
-theme_config = theme_module.main_theme()
-alt.themes.register("main_theme", theme_module.main_theme)
-alt.themes.enable("main_theme")
+import httpimport
 
 _ = alt.data_transformers.disable_max_rows()
 
+# Import custom altair theme from github using httpimport module
+def import_theme(github_username, github_repo, github_branch):
+    with httpimport.github_repo(github_username, github_repo, github_branch):
+        import main_theme
+    alt.themes.register("main_theme", main_theme.main_theme)
+    alt.themes.enable("main_theme")
+
+
 # Read in the neutralization data
 def load_data(file_path):
-    try:
-        df = pd.read_csv(file_path)
+    df = pd.read_csv(file_path)
 
-        REQUIRED_COLUMNS = [
-            "serum",
-            "virus",
-            "replicate",
-            "concentration",
-            "fraction infectivity",
-        ]
-        missing_columns = [col for col in REQUIRED_COLUMNS if col not in df.columns]
-        if missing_columns:
-            log_file.write(f"Missing required columns: {', '.join(missing_columns)}\n")
-            raise ValueError(f"Missing required columns: {', '.join(missing_columns)}")
-        return df
-    except Exception as e:
-        raise ValueError(f"Error loading data from {file_path}: {e}")
-
+    REQUIRED_COLUMNS = [
+        "serum",
+        "virus",
+        "replicate",
+        "concentration",
+        "fraction infectivity",
+    ]
+    missing_columns = [col for col in REQUIRED_COLUMNS if col not in df.columns]
+    if missing_columns:
+        log_file.write(f"Missing required columns: {', '.join(missing_columns)}\n")
+        raise ValueError(f"Missing required columns: {', '.join(missing_columns)}")
+    return df
 
 # Determine which type of neut was run by parsing the name of the input file
 def process_filename(file_path):
@@ -90,30 +69,27 @@ def determine_experiment_type(dataframe):
 
 
 # Estimate neutralization curves using the `curvefits` module from `neutcurve` package.
-def get_neutcurve(df, icvalues, replicate="average"):
+def fit_neutcurve(df):
     # estimate fits
-    fits = neutcurve.curvefits.CurveFits(
+    return neutcurve.curvefits.CurveFits(
         data=df,
         serum_col="serum",
         virus_col="virus",
         replicate_col="replicate",
         conc_col="concentration",
         fracinf_col="fraction infectivity",
-        #fixbottom=0,
     )
 
-    fitParams = fits.fitParams(ics=icvalues)
+def get_ic_values(fits):
+    fit_params = fits.fitParams(ics=ICVALUES)
+    fit_params.to_csv(snakemake.output.fitParams, index=False)
 
-    # get list of different sera and viruses that were tested
-    serum_list = list(df["serum"].unique())
-    virus_list = list(df["virus"].unique())
-
+def make_neutcurve_df(fits):
     curves = []  # initialize an empty list to store neutralization curve data
-
     # Loop over each serum type and retrieve the curve
     for serum in serum_list:
         for virus in virus_list:
-            curve = fits.getCurve(serum=serum, virus=virus, replicate=replicate)
+            curve = fits.getCurve(serum=serum, virus=virus, replicate="average")
             neut_df = curve.dataframe()  # turn into a dataframe
             neut_df["serum"] = serum  # assign serum name to a column
             neut_df["virus"] = virus  # assign virus name to a column
@@ -123,8 +99,7 @@ def get_neutcurve(df, icvalues, replicate="average"):
     combined_curve = pd.concat(curves, axis=0)
     combined_curve["upper"] = combined_curve["measurement"] + combined_curve["stderr"]
     combined_curve["lower"] = combined_curve["measurement"] - combined_curve["stderr"]
-
-    return combined_curve, fitParams
+    return combined_curve
 
 def custom_sort_order(array):
     # Helper function to extract numerical part from mutation strings.
@@ -151,36 +126,41 @@ def custom_sort_key(item):
         return int(match.group(1))
     return 0  # Return 0 for items without a time value
 
-colors_for_plot = snakemake.params.colors
 
 # Plot the neutralization curves
-def plot_neut_curve(df, vary_serum_flag, vary_virus_flag, sample_type, use_facet):
+def plot_neut_curve(df):
     if sample_type == "receptor":
-        scale = alt.Scale(type="log")
-        axis = alt.Axis(format=".0e", tickCount=3)
         title = "Concentration (µM)"
-        legend_title = "Receptor"
+        if vary_serum_flag:
+            legend_title = "Receptor"
+            color_variable = "serum"
+        elif vary_virus_flag:
+            legend_title = "Virus"
+            color_variable = "virus"
     elif sample_type == "sera":
-        scale = alt.Scale(type="log")
-        axis = alt.Axis(format=".0e", tickCount=3)
         title = "Sera Dilution"
-        legend_title = "Serum"
+        if vary_serum_flag:
+            legend_title = "Serum"
+            color_variable = "serum"
+        elif vary_virus_flag:
+            legend_title = "Virus"
+            color_variable = "virus"
     elif sample_type == "antibody":
-        scale = alt.Scale(type="log")
-        axis = alt.Axis(format=".0e", tickCount=3)
         title = "Concentration (µg/mL)"
-        legend_title = "Antibody"
+        if vary_serum_flag:
+            legend_title = "Antibody"
+            color_variable = "serum"
+        elif vary_virus_flag:
+            legend_title = "Virus"
+            color_variable = "virus"
     else:
         log_file.write(f"Unknown sample type: {sample_type}\n")
-        raise ValueError(f"Unknown sample type")
+        raise ValueError("Unknown sample type")
 
-    # Determine the color variable depending on the variable
-    if vary_serum_flag:
-        color_variable = "serum"
-        legend_title = "Serum"
-    elif vary_virus_flag:
-        color_variable = "virus"
-        legend_title= "Virus"
+    axis = alt.Axis(format=".0e", tickCount=3)
+    scale = alt.Scale(type="log")
+
+
 
     # Get the unique values of the color variable
     unique_values = df[color_variable].unique()
@@ -191,7 +171,7 @@ def plot_neut_curve(df, vary_serum_flag, vary_virus_flag, sample_type, use_facet
     # If 'WT' is present, set the color scale to include 'WT' as the first color and make it black
     if "WT" in df["virus"].unique():
         print("WT is present")
-        colors = ["black"] + colors_for_plot[: len(df["virus"].unique()) - 1]
+        colors = ["black"] + COLORS_FOR_PLOT[: len(df["virus"].unique()) - 1]
         color_scale = alt.Color(
             color_variable,
             title=legend_title,
@@ -203,13 +183,13 @@ def plot_neut_curve(df, vary_serum_flag, vary_virus_flag, sample_type, use_facet
         color_scale = alt.Color(
             color_variable,
             title=legend_title,
-            scale=alt.Scale(domain=sorted_values,range=colors_for_plot),
+            scale=alt.Scale(domain=sorted_values,range=COLORS_FOR_PLOT),
             sort=sorted_values
         )
         
     chart = (
         alt.Chart(df)
-        .mark_line(size=1.5)
+        .mark_line(size=LINE_WIDTH)
         .encode(
             x=alt.X(
                 "concentration:Q",
@@ -228,7 +208,7 @@ def plot_neut_curve(df, vary_serum_flag, vary_virus_flag, sample_type, use_facet
     )
     circle = (
         alt.Chart(df)
-        .mark_circle(size=30, opacity=1)
+        .mark_circle(size=CIRCLE_SIZE, opacity=1)
         .encode(
             x=alt.X(
                 "concentration",
@@ -242,7 +222,7 @@ def plot_neut_curve(df, vary_serum_flag, vary_virus_flag, sample_type, use_facet
     )
     error = (
         alt.Chart(df)
-        .mark_errorbar(opacity=1)
+        .mark_errorbar(opacity=ERROR_BAR_OPACITY)
         .encode(
             x="concentration",
             y=alt.Y("lower", title="Fraction Infectivity"),
@@ -251,16 +231,16 @@ def plot_neut_curve(df, vary_serum_flag, vary_virus_flag, sample_type, use_facet
         )
     )
     plot = chart + circle + error
-    plot = plot.properties(width=snakemake.params.width, height=snakemake.params.height)
+    plot = plot.properties(width=WIDTH, height=HEIGHT)
     
     if use_facet:
         facet_variable = 'serum' if vary_virus_flag else 'virus'
         plot = plot.facet(
             facet=alt.Facet(
-                f'{facet_variable}:N',
+                f"{facet_variable}:N",
                 header=alt.Header(title=None),
             ),
-            columns=2  
+            columns=N_FACETED_COLUMNS,
         )
 
     return plot
@@ -274,6 +254,22 @@ if __name__ == "__main__":
         log_file = open(str(snakemake.log), "w")
         log_file.write(f"Input file: {snakemake.input.neutFile}\n")
 
+        ICVALUES = snakemake.params.icvalues
+        COLORS_FOR_PLOT = snakemake.params.colors
+        HEIGHT = snakemake.params.height
+        WIDTH = snakemake.params.width
+        N_FACETED_COLUMNS = snakemake.params.n_faceted_columns
+        LINE_WIDTH = snakemake.params.line_width
+        CIRCLE_SIZE = snakemake.params.circle_size
+        ERROR_BAR_OPACITY = snakemake.params.error_bar_opacity
+
+        github_username = snakemake.params.github_username
+        github_repo = snakemake.params.github_repo
+        github_branch = snakemake.params.github_branch
+
+        # import custom altair theme from github
+        import_theme(github_username, github_repo, github_branch)
+
         # Load data
         df = load_data(snakemake.input.neutFile)
 
@@ -286,15 +282,17 @@ if __name__ == "__main__":
         vary_serum_flag, vary_virus_flag = determine_experiment_type(df)
 
         # Get neutralization curves and IC values
-        neutcurve_df, fit_params = get_neutcurve(df, snakemake.params.icvalues)
+        fit = fit_neutcurve(df)
+        get_ic_values(fit)
 
-        # Save the fit parameters
-        fit_params.to_csv(snakemake.output.fitParams, index=False)
+        # get list of different sera and viruses that were tested
+        serum_list = list(df["serum"].unique())
+        virus_list = list(df["virus"].unique())
+
+        neutcurve_df = make_neutcurve_df(fit)
 
         # Plot the neutralization curves
-        neut_curve = plot_neut_curve(
-            neutcurve_df, vary_serum_flag, vary_virus_flag, sample_type, use_facet
-        )
+        neut_curve = plot_neut_curve(neutcurve_df)
         neut_curve.save(snakemake.output.neutcurve_img, ppi=300)
         neut_curve.save(snakemake.output.neutcurve_svg)
 

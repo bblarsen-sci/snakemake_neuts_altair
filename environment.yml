@@ -11,7 +11,8 @@ dependencies:
   - jupyterlab
   - python=3.11
   - snakefmt
-  - snakemake=7.32
-  - vl-convert-python
+  - snakemake=8.23.0
   - pip:
     - neutcurve==0.5.7
+    - vl-convert-python
+    - httpimport
