@@ -3,7 +3,7 @@ Plot neutralization curves with Altair
 
 This snakemake pipeline uses the [neut_curve](https://jbloomlab.github.io/neutcurve/) package to fit neutralization curves to data and [Altair](https://altair-viz.github.io/) to plot the results. It parses the name of the file to automatically determine if the data are serum, antibody, or receptor selections, and also if it should be faceted.
 
-<img src='./results/images/241014_NiVsG_42_sera_facet.png' width='600' height='200'>
+<img src='./results/images/241014_NiVsG_42_sera_facet.png' width='800'>
 
 ## Installation and Usage
 clone the repository
