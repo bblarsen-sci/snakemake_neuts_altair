@@ -5,8 +5,8 @@ icvalues: [50,90,99]
 height: 200
 width: 300
 
-line_width: 1.5
-circle_size: 25
+line_width: 1.25
+circle_size: 15
 error_bar_opacity: 0.8
 
 # which colors to use (in order). 

@@ -19,8 +19,9 @@ rule neuts:
         error_bar_opacity=config["error_bar_opacity"],
 
     conda:
-        "../../environment.yml"
+        "../envs/environment.yml"
     log:
         "results/logs/{sample}_neuts.txt",
-    script:
-        "../scripts/neuts.py"
+        notebook = "results/logs/{sample}_neuts.py.ipynb"
+    notebook:
+        "../notebooks/neuts.py.ipynb"
