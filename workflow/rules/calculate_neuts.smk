@@ -17,11 +17,10 @@ rule neuts:
         line_width=config["line_width"],
         circle_size=config["circle_size"],
         error_bar_opacity=config["error_bar_opacity"],
-
     conda:
         "../envs/environment.yml"
     log:
         "results/logs/{sample}_neuts.txt",
-        notebook = "results/logs/{sample}_neuts.py.ipynb"
+        notebook = "results/notebooks/{sample}_neuts.py.ipynb"
     notebook:
         "../notebooks/neuts.py.ipynb"

@@ -8,7 +8,6 @@ print(samples)
 
 include: "rules/calculate_neuts.smk"
 
-
 rule all:
     input:
         expand("results/fitparams/{sample}.csv", sample=samples),

@@ -6,8 +6,8 @@ height: 200
 width: 300
 
 line_width: 1.25
-circle_size: 15
-error_bar_opacity: 0.8
+circle_size: 25
+error_bar_opacity: 1.0
 
 # which colors to use (in order). 
 colors: ["#4E79A5","#F18F3B","#E0585B","#77B7B2","#5AA155","#EDC958","#AF7AA0","#FE9EA8","#9C7561","#BAB0AC"]

@@ -1,7 +1,7 @@
-2024-11-04 11:26:55,296 - INFO - Starting notebook execution
-2024-11-04 11:26:55,675 - INFO - Number of serum variables: 1
+2024-12-10 10:41:03,222 - INFO - Starting notebook execution
+2024-12-10 10:41:03,690 - INFO - Number of serum variables: 1
 
-2024-11-04 11:26:55,677 - INFO - Number of virus variables: 8
+2024-12-10 10:41:03,693 - INFO - Number of virus variables: 8
 
-2024-11-04 11:26:57,552 - INFO - Total notebook execution time: 2.26 seconds (0.04 minutes)
-2024-11-04 11:26:57,554 - INFO - Notebook execution complete
+2024-12-10 10:41:05,633 - INFO - Total notebook execution time: 2.41 seconds (0.04 minutes)
+2024-12-10 10:41:05,634 - INFO - Notebook execution complete
